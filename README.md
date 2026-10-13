@@ -132,21 +132,7 @@ make menuconfig               # LuCI → Applications → luci-app-pushbot
 
 ### 方式二：作为 feed 集成
 
-> ⚠️ **不能**直接写 `src-git pushbot https://github.com/naoki66/luci-app-pushbot.git`。
->
-> feed 扫描约定"每个包必须位于 feed 的子目录里"。`scripts/feeds` 会把扫描目录设为 **`feeds/<feed名>`**（第 136 行 `SCAN_DIR="feeds/$name"`，`SCAN_DEPTH=5`），再由 `include/scan.mk` 用
-> `find -L feeds/<feed名> -mindepth 1 -maxdepth 5 -name Makefile | xargs grep -aHE 'call (Build/DefaultTargets|BuildPackage|KernelPackage)' | sed -e 's#^feeds/<feed名>/##' -e 's#/Makefile:.*##'`
-> 反推包目录名。
->
-> 本仓库 `Makefile` 在**仓库根**、末行正是 `# call BuildPackage - OpenWrt buildroot signature`（`Makefile` 第 98 行），于是链路这样崩掉：
->
-> 1. `find` 命中 → `feeds/pushbot/Makefile:# call BuildPackage …`
-> 2. 第一段 sed 剥掉 `feeds/pushbot/` → `Makefile:# call BuildPackage …`
-> 3. 第二段 sed 找不到 `/Makefile:` 可切（深度只有 1）→ 整行被当成"目录"写进 `.files-packageinfo.mk`
-> 4. 下一步 `awk '{print "$(SCAN_DIR)/" $0 "/Makefile"}'` 拼出含空格的路径再交给 `xargs grep`，被按空格拆成 `call`、`BuildPackage`、`OpenWrt`、`buildroot`、`signature`、`Makefile` 等词，**每个词都报一次「没有那个文件或目录」**
-> 5. 生成的 makefile 首行非法（目标模式不含 `%`）→ 索引生成失败
-
-所以要作为 feed 用，必须在外面**套一层目录**，让它满足深度 ≥ 2。用 `src-link` 最方便（软链到本地，改动即时可见，不必反复 `update`）：
+> 本仓库的包位于仓库根，而 feed 要求每个包位于子目录中，因此用 `src-link` 在外面套一层目录再链进来：
 
 ```bash
 mkdir -p /usr/src/pushbot-feed
@@ -164,10 +150,6 @@ src-link pushbot /usr/src/pushbot-feed
 ./scripts/feeds install -a -p pushbot
 make menuconfig               # LuCI → Applications → luci-app-pushbot
 ```
-
-此时扫描路径为 `feeds/pushbot/luci-app-pushbot/Makefile`（深度 2），sed 能正确切出 `luci-app-pushbot`，索引正常生成。
-
-> 提醒：上游 `scripts/feeds` 真正实现的 flag 只有 `--force` 和 `--root=<子目录>`（后者是把 `feeds/<feed名>` 指向仓库内的某个子目录）；`--directory=` 之类的写法虽然能通过行解析正则，但**没有任何代码读取它**，属于无效参数，解决不了上面的深度问题。
 
 ## 📥 下载
 
@@ -225,32 +207,3 @@ make menuconfig               # LuCI → Applications → luci-app-pushbot
 ## 🍡赏我一把 Token
 **制作不易，感谢支持**
 ![赞赠](docs/img/donate.png)
-
-## 📛 改名公告
-
-**2021年04月25日** 起 `luci-app-serverchand` 改名为 **`luci-app-pushbot`**。
-
-如需拉取编译：
-
-```bash
-# 旧：
-# git clone https://github.com/zzsj0928/luci-app-serverchand package/luci-app-serverchand
-# 新：
-git clone https://github.com/naoki66/luci-app-pushbot package/luci-app-pushbot
-```
-
-并把 `.config` 中：
-
-```
-CONFIG_PACKAGE_luci-app-serverchand=y
-```
-
-改为：
-
-```
-CONFIG_PACKAGE_luci-app-pushbot=y
-```
-
-> 注意：本次改名需要提前备份 serverchand 配置，并于 PushBot 中重新配置。
-
-**再次谢谢各位支持** 🙏

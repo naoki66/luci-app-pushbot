@@ -8,7 +8,7 @@
   - 兼容：三种消息类型的排版标记互不通用，按所选类型整体覆盖（文本用 `•`/`------`、图文用 `<b>`/`<br>`/`<hr>`、markdown 用 `####`/`**`/`>`），避免把 Markdown 语法塞进纯文本或 HTML 正文
   - 调整：**仓库引用全部迁移到本仓库**——在线更新检查（raw Makefile / Release 下载地址）、界面「问题反馈」链接、CI 编译与发布门禁（`REPO_URL`、`github.repository`）统一指向 `naoki66/luci-app-pushbot`
   - 调整：**README 资源本地化**——界面截图与赞赏二维码移入仓库 `docs/img/`，不再依赖外部 `ReadmeContents` 图床；「关联下载」改为「致谢引用」，补上对上游及参考项目的致谢
-  - 新增：**README 编译集成说明**——补充加入 `feeds.conf.default` 的用法，含"包位于仓库根会导致 feed 索引失败"的成因与 `src-link` 套一层目录的解法
+  - 新增：**README 编译集成说明**——补充「克隆到 `package/`」与「加入 `feeds.conf.default`（`src-link` 套一层目录）」两种用法；同时删除已失效的「改名公告」章节
 
 - **2026-10-13**（v6.01-r14）：新增企业微信应用推送渠道
   - 新增：**企业微信应用**——在「企业微信机器人」与「PushPlus」之间新增该渠道，填写企业ID、应用 Secret、AgentId、接收人即可推送到企业微信应用（支持发给指定成员或 `@all`，消息以 markdown 渲染）；`access_token` 由模板内联换取，无需额外脚本

@@ -8,7 +8,7 @@
   - Compatibility: the three message types use incompatible markup, so the whole formatting set is overridden per type (text uses `•`/`------`, mpnews uses `<b>`/`<br>`/`<hr>`, markdown uses `####`/`**`/`>`) instead of injecting Markdown syntax into plain text or HTML bodies
   - Changed: **all repository references now point at this repo** — the online-update checks (raw Makefile / Release download URL), the UI "report an issue" link and the CI build/release gate (`REPO_URL`, `github.repository`) all target `naoki66/luci-app-pushbot`
   - Changed: **README assets are local now** — screenshots and the donation QR moved into the repo under `docs/img/`, no longer relying on the external `ReadmeContents` host; "Related" became "Acknowledgements" crediting the upstream and reference projects
-  - Added: **README build/integration notes** — how to add this repo to `feeds.conf.default`, including why a package at the repository root breaks feed indexing and the `src-link` one-extra-directory workaround
+  - Added: **README build/integration notes** — how to clone into `package/` or add this repo to `feeds.conf.default` via `src-link` with one extra directory level; the obsolete "Rename Notice" section was dropped
 
 - **2026-10-13** (v6.01-r14): New WeCom app push channel
   - Added: **WeCom app** — a new channel placed between "WeCom bot" and "PushPlus"; fill in Corp ID, App Secret, AgentId and recipients to push to a WeCom app (send to specific members or `@all`, content rendered as markdown); `access_token` is obtained inline by the template, no extra script needed

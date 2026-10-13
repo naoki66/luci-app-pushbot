@@ -132,20 +132,7 @@ make menuconfig               # LuCI → Applications → luci-app-pushbot
 
 ### Option 2: integrate as a feed
 
-> ⚠️ You **cannot** simply write `src-git pushbot https://github.com/naoki66/luci-app-pushbot.git`.
->
-> Feeds require every package to live in a **subdirectory** of the feed. `scripts/feeds` sets the scan directory to **`feeds/<feed name>`** (line 136: `SCAN_DIR="feeds/$name"`, `SCAN_DEPTH=5`), and `include/scan.mk` then derives the package directory with
-> `find -L feeds/<feed name> -mindepth 1 -maxdepth 5 -name Makefile | xargs grep -aHE 'call (Build/DefaultTargets|BuildPackage|KernelPackage)' | sed -e 's#^feeds/<feed name>/##' -e 's#/Makefile:.*##'`
->
-> Because this repo's `Makefile` is at the **repository root** and its last line is exactly `# call BuildPackage - OpenWrt buildroot signature` (`Makefile` line 98), the chain breaks like this:
->
-> 1. `find` matches → `feeds/pushbot/Makefile:# call BuildPackage …`
-> 2. the first `sed` strips `feeds/pushbot/` → `Makefile:# call BuildPackage …`
-> 3. the second `sed` has no `/Makefile:` left to cut (depth is only 1) → the whole line is written into `.files-packageinfo.mk` as a "directory"
-> 4. the next step, `awk '{print "$(SCAN_DIR)/" $0 "/Makefile"}'`, builds a path containing spaces and hands it to `xargs grep`, which splits it on whitespace into `call`, `BuildPackage`, `OpenWrt`, `buildroot`, `signature`, `Makefile`, … → **one "No such file or directory" per word**
-> 5. the generated makefile has an invalid first line (target pattern contains no `%`) → index generation fails
-
-So to use it as a feed you must wrap it in **one extra directory level** so the depth is ≥ 2. `src-link` is the easiest way (it symlinks a local directory, so edits are visible immediately without re-running `update`):
+> This repo keeps the package at the repository root, while a feed requires every package in a subdirectory — so use `src-link` with one extra directory level:
 
 ```bash
 mkdir -p /usr/src/pushbot-feed
@@ -163,10 +150,6 @@ src-link pushbot /usr/src/pushbot-feed
 ./scripts/feeds install -a -p pushbot
 make menuconfig               # LuCI → Applications → luci-app-pushbot
 ```
-
-The scanned path is now `feeds/pushbot/luci-app-pushbot/Makefile` (depth 2), the `sed` correctly yields `luci-app-pushbot`, and the index builds fine.
-
-> Note: upstream `scripts/feeds` only implements `--force` and `--root=<subdir>` (the latter points `feeds/<feed name>` at a subdirectory inside the repo). A `--directory=` style option passes the line-parsing regex but **no code ever reads it** — it is a no-op and does not solve the depth problem above.
 
 ## 📥 Download
 
@@ -224,32 +207,3 @@ This project is based on or references the following open-source projects — ma
 ## 🍡Buy me a cup of TOKEN 😜
 **Appreciate Your Like!**
 ![Awards](docs/img/donate.png)
-
-## 📛 Rename Notice
-
-Since **2021-04-25**, `luci-app-serverchand` was renamed to **`luci-app-pushbot`**.
-
-To build from source:
-
-```bash
-# old:
-# git clone https://github.com/zzsj0928/luci-app-serverchand package/luci-app-serverchand
-# new:
-git clone https://github.com/naoki66/luci-app-pushbot package/luci-app-pushbot
-```
-
-Change in `.config`:
-
-```
-CONFIG_PACKAGE_luci-app-serverchand=y
-```
-
-to:
-
-```
-CONFIG_PACKAGE_luci-app-pushbot=y
-```
-
-> Note: back up your serverchand config before the rename and reconfigure PushBot.
-
-**Thanks for your support** 🙏
