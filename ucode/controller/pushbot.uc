@@ -769,7 +769,7 @@ return {
 		system("echo \"v" + ver + "-r" + rel + "\" > /tmp/pushbot/ota_ver");
 
 
-		let base = "https://github.com/zzsj0928/luci-app-pushbot/releases/download/luci-app-pushbot-v" + ver + "-r" + rel + "/";
+		let base = "https://github.com/naoki66/luci-app-pushbot/releases/download/luci-app-pushbot-v" + ver + "-r" + rel + "/";
 		let files;
 		if (mgr == "apk") {
 			files = [

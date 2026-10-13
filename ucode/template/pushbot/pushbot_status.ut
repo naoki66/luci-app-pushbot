@@ -353,7 +353,7 @@ function pb_ota_showError(ov, msg) {
 		var local = (badge.textContent || '').replace(/^v/, '');
 		var ctl = new AbortController();
 		var timer = setTimeout(function() { ctl.abort(); }, 8000);
-		fetch('https://raw.githubusercontent.com/zzsj0928/luci-app-pushbot/master/Makefile', { signal: ctl.signal })
+		fetch('https://raw.githubusercontent.com/naoki66/luci-app-pushbot/master/Makefile', { signal: ctl.signal })
 			.then(function(r) {
 				if (!r.ok) throw new Error('HTTP ' + r.status);
 				return r.text();
@@ -488,7 +488,7 @@ pb_ota_showCountdown(ov);
 						{
 							label: '{{ _('Download Link') }}',
 							onClick: function(btn, ov) {
-								var baseUrl = 'https://github.com/zzsj0928/luci-app-pushbot/releases/download/luci-app-pushbot-v' + remoteVer + '-r' + remoteRel + '/';
+								var baseUrl = 'https://github.com/naoki66/luci-app-pushbot/releases/download/luci-app-pushbot-v' + remoteVer + '-r' + remoteRel + '/';
 								var isApk = false;
 								var xh = new XMLHttpRequest();
 								xh.open('GET', '{{ dispatcher.build_url("admin", "services", "pushbot", "detect_pkgmgr") }}?_=' + Date.now(), false);
@@ -5528,7 +5528,7 @@ window.addEventListener('load',function(){apply(compute());});
 				<div class="pushbot-card-subtitle">
 					<div>{{ _('PushBot - push router alerts and logs to DingTalk, WeCom and PushPlus.') }}</div>
 					<div>{{ _('Forked from tty228/luci-app-serverchan, maintained by Zed-7nian.') }}</div>
-					<div>{{ _('For issues, visit the <a href="https://github.com/zzsj0928/luci-app-pushbot" target="_blank">GitHub page</a>') }}</div>
+					<div>{{ _('For issues, visit the <a href="https://github.com/naoki66/luci-app-pushbot" target="_blank">GitHub page</a>') }}</div>
 				</div>
 			</div>
 		</div>

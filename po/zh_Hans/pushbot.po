@@ -1110,8 +1110,8 @@ msgstr "全能推送 PushBot——路由器报警与日志推送工具，支持�
 msgid "Forked from tty228/luci-app-serverchan, maintained by Zed-7nian."
 msgstr "基于 tty228/luci-app-serverchan 二次开发，由 然后七年 维护。"
 
-msgid "For issues, visit the <a href=\"https://github.com/zzsj0928/luci-app-pushbot\" target=\"_blank\">GitHub page</a>"
-msgstr "使用问题请到 <a href=\"https://github.com/zzsj0928/luci-app-pushbot\" target=\"_blank\">GitHub 反馈</a>"
+msgid "For issues, visit the <a href=\"https://github.com/naoki66/luci-app-pushbot\" target=\"_blank\">GitHub page</a>"
+msgstr "使用问题请到 <a href=\"https://github.com/naoki66/luci-app-pushbot\" target=\"_blank\">GitHub 反馈</a>"
 
 msgid "Global connectivity retries"
 msgstr "全球互联检测次数"
@@ -1306,8 +1306,8 @@ msgid "IP blacklist changed. Reload the page and try again."
 msgstr "黑名单已变更，请刷新页面后重试。"
 
 
-msgid "For issues, visit the <a href=\"https://github.com/zzsj0928/luci-app-pushbot\" target=\"_blank\">GitHub page</a>"
-msgstr "问题反馈请访问 <a href=\"https://github.com/zzsj0928/luci-app-pushbot\" target=\"_blank\">GitHub 页面</a>"
+msgid "For issues, visit the <a href=\"https://github.com/naoki66/luci-app-pushbot\" target=\"_blank\">GitHub page</a>"
+msgstr "问题反馈请访问 <a href=\"https://github.com/naoki66/luci-app-pushbot\" target=\"_blank\">GitHub 页面</a>"
 
 
 msgid "nlbwmon不建议启用"

@@ -4,11 +4,11 @@
 
 **Router alert & log push tool** — DingTalk · WeCom bot · WeCom app (markdown/text/mpnews) · Feishu · Bark · PushPlus · PushDeer · ntfy · Gotify · WxPusher
 
-[![GitHub release](https://img.shields.io/github/v/release/zzsj0928/luci-app-pushbot?style=flat-square&color=blue)](https://github.com/zzsj0928/luci-app-pushbot/releases)
-[![GitHub issues](https://img.shields.io/github/issues/zzsj0928/luci-app-pushbot?style=flat-square&color=orange)](https://github.com/zzsj0928/luci-app-pushbot/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/zzsj0928/luci-app-pushbot?style=flat-square&color=brightgreen)](https://github.com/zzsj0928/luci-app-pushbot/pulls)
-[![GitHub stars](https://img.shields.io/github/stars/zzsj0928/luci-app-pushbot?style=flat-square&color=yellow)](https://github.com/zzsj0928/luci-app-pushbot/stargazers)
-[![GitHub license](https://img.shields.io/github/license/zzsj0928/luci-app-pushbot?style=flat-square)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/naoki66/luci-app-pushbot?style=flat-square&color=blue)](https://github.com/naoki66/luci-app-pushbot/releases)
+[![GitHub issues](https://img.shields.io/github/issues/naoki66/luci-app-pushbot?style=flat-square&color=orange)](https://github.com/naoki66/luci-app-pushbot/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/naoki66/luci-app-pushbot?style=flat-square&color=brightgreen)](https://github.com/naoki66/luci-app-pushbot/pulls)
+[![GitHub stars](https://img.shields.io/github/stars/naoki66/luci-app-pushbot?style=flat-square&color=yellow)](https://github.com/naoki66/luci-app-pushbot/stargazers)
+[![GitHub license](https://img.shields.io/github/license/naoki66/luci-app-pushbot?style=flat-square)](LICENSE)
 
 [简体中文](../README.md) | **English**
 
@@ -24,7 +24,7 @@
 
 ## 📝 Changelog
 
-- **2026-10-13** (v6.01-r15): New WeCom app channel with three push modes
+- **2026-10-13** (v6.01-r15, original modification by naoki66): New WeCom app channel with three push modes
   - Added: **WeCom app** — a new channel between "WeCom bot" and "PushPlus"; fill in Corp ID / App Secret / AgentId / recipients and push to a WeCom app. The former "WeCom" channel is renamed **"WeCom bot"** to tell group bots and app messages apart
   - Added: **Three push modes** — the in-card "Message Type" dropdown switches between **markdown / plain text / mpnews**, and the four WeCom parameters are shared by all three; see [WeCom App (Three Push Modes)](#-wecom-app-three-push-modes)
   - Added: **Failure diagnosis** — the API `errcode`/`errmsg` is written to the log with common causes translated (trusted IP, visible range, oversized payload, rate limit, etc.); missing parameters report exactly which one is missing
@@ -118,15 +118,69 @@ This channel writes the API's `errcode` / `errmsg` to the log and translates it 
 | `40058` | Invalid parameter (User ID / Agent ID format), or the body exceeds 2048 bytes |
 | `45009` | API rate limit exceeded — lower the push frequency |
 
+## 🔧 Building & Integration
+
+This is a **LuCI application repository**: the package files (`Makefile`, `root/`, `ucode/`, `po/`) sit directly at the **repository root** — there is no `luci-app-pushbot/` subdirectory. There are two ways to bring it into an OpenWrt / ImmortalWrt source tree.
+
+### Option 1: clone into `package/` (simplest, recommended)
+
+```bash
+cd openwrt                    # your OpenWrt / ImmortalWrt source root
+git clone --depth=1 https://github.com/naoki66/luci-app-pushbot package/luci-app-pushbot
+make menuconfig               # LuCI → Applications → luci-app-pushbot
+```
+
+### Option 2: integrate as a feed
+
+> ⚠️ You **cannot** simply write `src-git pushbot https://github.com/naoki66/luci-app-pushbot.git`.
+>
+> Feeds require every package to live in a **subdirectory** of the feed. `scripts/feeds` sets the scan directory to **`feeds/<feed name>`** (line 136: `SCAN_DIR="feeds/$name"`, `SCAN_DEPTH=5`), and `include/scan.mk` then derives the package directory with
+> `find -L feeds/<feed name> -mindepth 1 -maxdepth 5 -name Makefile | xargs grep -aHE 'call (Build/DefaultTargets|BuildPackage|KernelPackage)' | sed -e 's#^feeds/<feed name>/##' -e 's#/Makefile:.*##'`
+>
+> Because this repo's `Makefile` is at the **repository root** and its last line is exactly `# call BuildPackage - OpenWrt buildroot signature` (`Makefile` line 98), the chain breaks like this:
+>
+> 1. `find` matches → `feeds/pushbot/Makefile:# call BuildPackage …`
+> 2. the first `sed` strips `feeds/pushbot/` → `Makefile:# call BuildPackage …`
+> 3. the second `sed` has no `/Makefile:` left to cut (depth is only 1) → the whole line is written into `.files-packageinfo.mk` as a "directory"
+> 4. the next step, `awk '{print "$(SCAN_DIR)/" $0 "/Makefile"}'`, builds a path containing spaces and hands it to `xargs grep`, which splits it on whitespace into `call`, `BuildPackage`, `OpenWrt`, `buildroot`, `signature`, `Makefile`, … → **one "No such file or directory" per word**
+> 5. the generated makefile has an invalid first line (target pattern contains no `%`) → index generation fails
+
+So to use it as a feed you must wrap it in **one extra directory level** so the depth is ≥ 2. `src-link` is the easiest way (it symlinks a local directory, so edits are visible immediately without re-running `update`):
+
+```bash
+mkdir -p /usr/src/pushbot-feed
+git clone --depth=1 https://github.com/naoki66/luci-app-pushbot /usr/src/pushbot-feed/luci-app-pushbot
+```
+
+Append one line to `feeds.conf.default` in your source root:
+
+```
+src-link pushbot /usr/src/pushbot-feed
+```
+
+```bash
+./scripts/feeds update pushbot
+./scripts/feeds install -a -p pushbot
+make menuconfig               # LuCI → Applications → luci-app-pushbot
+```
+
+The scanned path is now `feeds/pushbot/luci-app-pushbot/Makefile` (depth 2), the `sed` correctly yields `luci-app-pushbot`, and the index builds fine.
+
+> Note: upstream `scripts/feeds` only implements `--force` and `--root=<subdir>` (the latter points `feeds/<feed name>` at a subdirectory inside the repo). A `--directory=` style option passes the line-parsing regex but **no code ever reads it** — it is a no-op and does not solve the depth problem above.
+
 ## 📥 Download
 
-- [luci-app-pushbot Releases](https://github.com/zzsj0928/luci-app-pushbot/releases)
+- [luci-app-pushbot Releases](https://github.com/naoki66/luci-app-pushbot/releases)
 
-### Related
+### Acknowledgements
 
-- [luci-app-serverchan](https://github.com/tty228/luci-app-serverchan/releases)
-- [wrtbwmon](https://github.com/brvphoenix/wrtbwmon)
-- [luci-app-wrtbwmon](https://github.com/brvphoenix/luci-app-wrtbwmon)
+This project is based on or references the following open-source projects — many thanks to them:
+
+- [zzsj0928/luci-app-pushbot](https://github.com/zzsj0928/luci-app-pushbot) — the upstream original project of this repository
+- [tty228/luci-app-serverchan](https://github.com/tty228/luci-app-serverchan) — the original ancestor of this plugin
+- [tty228/luci-app-wechatpush](https://github.com/tty228/luci-app-wechatpush) — reference implementation for the WeCom app push channel
+- [brvphoenix/wrtbwmon](https://github.com/brvphoenix/wrtbwmon) — traffic accounting
+- [brvphoenix/luci-app-wrtbwmon](https://github.com/brvphoenix/luci-app-wrtbwmon) — traffic accounting LuCI UI
 
 ## 💡 Notes
 
@@ -146,30 +200,30 @@ This channel writes the API's `errcode` / `errmsg` to the log and translates it 
 
 - **Modern UI, dark-mode compatible, better architecture**
 
-<img src="https://raw.githubusercontent.com/zzsj0928/ReadmeContents/main/Pushbot/Pushbot.v5.Dark.png" width="850">
-<img src="https://raw.githubusercontent.com/zzsj0928/ReadmeContents/main/Pushbot/Pushbot.v5.Light.png" width="850">
+<img src="docs/img/Pushbot.v5.Dark.png" width="850">
+<img src="docs/img/Pushbot.v5.Light.png" width="850">
 
 <br><br/>
 
 - **Notification bar: push title at a glance, grouped by device**
 
-<img src="https://raw.githubusercontent.com/zzsj0928/ReadmeContents/main/Pushbot/Msg.Notification.jpg" width="500">
+<img src="docs/img/Msg.Notification.jpg" width="500">
 
 <br><br/>
 
 - **Message list: latest push titles**
 
-<img src="https://raw.githubusercontent.com/zzsj0928/ReadmeContents/main/Pushbot/Msg.List.jpg" width="500">
+<img src="docs/img/Msg.List.jpg" width="500">
 
 <br><br/>
 
 - **Message content: all push info at a glance**
 
-<img src="https://raw.githubusercontent.com/zzsj0928/ReadmeContents/main/Pushbot/MsgContentDetials.jpeg" width="500">
+<img src="docs/img/MsgContentDetials.jpeg" width="500">
 
 ## 🍡Buy me a cup of TOKEN 😜
 **Appreciate Your Like!**
-![Awards](https://raw.githubusercontent.com/zzsj0928/ReadmeContents/master/general/donate-zed.jpg)
+![Awards](docs/donate.png)
 
 ## 📛 Rename Notice
 
@@ -181,7 +235,7 @@ To build from source:
 # old:
 # git clone https://github.com/zzsj0928/luci-app-serverchand package/luci-app-serverchand
 # new:
-git clone https://github.com/zzsj0928/luci-app-pushbot package/luci-app-pushbot
+git clone https://github.com/naoki66/luci-app-pushbot package/luci-app-pushbot
 ```
 
 Change in `.config`:

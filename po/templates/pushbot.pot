@@ -1051,7 +1051,7 @@ msgstr ""
 msgid "Forked from tty228/luci-app-serverchan, maintained by Zed-7nian."
 msgstr ""
 
-msgid "For issues, visit the <a href=\"https://github.com/zzsj0928/luci-app-pushbot\" target=\"_blank\">GitHub page</a>"
+msgid "For issues, visit the <a href=\"https://github.com/naoki66/luci-app-pushbot\" target=\"_blank\">GitHub page</a>"
 msgstr ""
 
 msgid "Global connectivity retries"

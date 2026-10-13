@@ -43,11 +43,11 @@ permissions:
 env:
   TZ: Asia/Shanghai
   PLUGIN_NAME: luci-app-pushbot
-  REPO_URL: https://github.com/zzsj0928/luci-app-pushbot.git
+  REPO_URL: https://github.com/naoki66/luci-app-pushbot.git
 
 jobs:
   build:
-    if: github.repository == 'zzsj0928/luci-app-pushbot'
+    if: github.repository == 'naoki66/luci-app-pushbot'
     runs-on: ${{ inputs.chosen-os || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
@@ -180,7 +180,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: always() && needs.build.result == 'success' && github.repository == 'zzsj0928/luci-app-pushbot'
+    if: always() && needs.build.result == 'success' && github.repository == 'naoki66/luci-app-pushbot'
     steps:
       - name: Checkout
         uses: actions/checkout@v4

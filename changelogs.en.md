@@ -1,11 +1,14 @@
 # Changelog
 
-- **2026-10-13** (v6.01-r15): WeCom app now supports three message types
+- **2026-10-13** (v6.01-r15, original modification by naoki66): WeCom app now supports three message types
   - Added: **Message Type** — a dropdown inside the "WeCom app" channel to switch between **markdown / text / mpnews**; the four WeCom credentials are shared, no need to fill them twice
   - Added: **mpnews (graphic message)** — pushes an article card (title + body + thumbnail, tap the title to expand), body rendered as HTML; the thumbnail is uploaded before each send to obtain `thumb_media_id`, and a default image ships at `/usr/bin/pushbot/api/logo.png` (a custom path is also supported: JPG/PNG within 2MB, best at 900x383)
   - Improved: **access_token is now fetched by the script** — the template url uses the `${weapp_token}` placeholder so the send request and the media upload share one `gettoken` call; failures still surface as an empty `access_token=` and trigger the existing diagnostics
   - Fixed: **conditional fields now update live** — `showWhen` linked hidden inputs were assigned without firing a change event; the event is now dispatched so the thumbnail path field appears/hides as the message type changes (also fixes the same issue for the PushPlus "Channel Code" field)
   - Compatibility: the three message types use incompatible markup, so the whole formatting set is overridden per type (text uses `•`/`------`, mpnews uses `<b>`/`<br>`/`<hr>`, markdown uses `####`/`**`/`>`) instead of injecting Markdown syntax into plain text or HTML bodies
+  - Changed: **all repository references now point at this repo** — the online-update checks (raw Makefile / Release download URL), the UI "report an issue" link and the CI build/release gate (`REPO_URL`, `github.repository`) all target `naoki66/luci-app-pushbot`
+  - Changed: **README assets are local now** — screenshots and the donation QR moved into the repo under `docs/img/`, no longer relying on the external `ReadmeContents` host; "Related" became "Acknowledgements" crediting the upstream and reference projects
+  - Added: **README build/integration notes** — how to add this repo to `feeds.conf.default`, including why a package at the repository root breaks feed indexing and the `src-link` one-extra-directory workaround
 
 - **2026-10-13** (v6.01-r14): New WeCom app push channel
   - Added: **WeCom app** — a new channel placed between "WeCom bot" and "PushPlus"; fill in Corp ID, App Secret, AgentId and recipients to push to a WeCom app (send to specific members or `@all`, content rendered as markdown); `access_token` is obtained inline by the template, no extra script needed

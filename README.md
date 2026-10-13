@@ -4,11 +4,11 @@
 
 **路由器报警与日志推送工具** — 支持钉钉 · 企业微信机器人 · 企业微信应用（markdown / 文本 / 图文） · 飞书 · Bark · PushPlus · PushDeer · ntfy · Gotify · WxPusher 多渠道
 
-[![GitHub release](https://img.shields.io/github/v/release/zzsj0928/luci-app-pushbot?style=flat-square&color=blue)](https://github.com/zzsj0928/luci-app-pushbot/releases)
-[![GitHub issues](https://img.shields.io/github/issues/zzsj0928/luci-app-pushbot?style=flat-square&color=orange)](https://github.com/zzsj0928/luci-app-pushbot/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/zzsj0928/luci-app-pushbot?style=flat-square&color=brightgreen)](https://github.com/zzsj0928/luci-app-pushbot/pulls)
-[![GitHub stars](https://img.shields.io/github/stars/zzsj0928/luci-app-pushbot?style=flat-square&color=yellow)](https://github.com/zzsj0928/luci-app-pushbot/stargazers)
-[![GitHub license](https://img.shields.io/github/license/zzsj0928/luci-app-pushbot?style=flat-square)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/naoki66/luci-app-pushbot?style=flat-square&color=blue)](https://github.com/naoki66/luci-app-pushbot/releases)
+[![GitHub issues](https://img.shields.io/github/issues/naoki66/luci-app-pushbot?style=flat-square&color=orange)](https://github.com/naoki66/luci-app-pushbot/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/naoki66/luci-app-pushbot?style=flat-square&color=brightgreen)](https://github.com/naoki66/luci-app-pushbot/pulls)
+[![GitHub stars](https://img.shields.io/github/stars/naoki66/luci-app-pushbot?style=flat-square&color=yellow)](https://github.com/naoki66/luci-app-pushbot/stargazers)
+[![GitHub license](https://img.shields.io/github/license/naoki66/luci-app-pushbot?style=flat-square)](LICENSE)
 
 **简体中文** | [English](README.en.md)
 
@@ -24,7 +24,7 @@
 
 ## 📝 更新日志
 
-- **2026-10-13**（v6.01-r15）：新增企业微信应用推送渠道，并支持三种推送模式
+- **2026-10-13**（v6.01-r15，naoki66 原创修改）：新增企业微信应用推送渠道，并支持三种推送模式
   - 新增：**企业微信应用**——在「企业微信机器人」与「PushPlus」之间新增该渠道，填企业ID / 应用密钥 / 应用ID / 接收人即可推送到企业微信应用；原「企业微信」渠道改名**「企业微信机器人」**以区分群机器人与应用消息
   - 新增：**三种推送模式**——渠道内「消息类型」下拉可切换 **markdown / 纯文本 / 图文消息**，四个企微参数共用一份；详见 [企业微信应用（三种推送模式）](#-企业微信应用三种推送模式)
   - 新增：**失败原因诊断**——把接口 `errcode`/`errmsg` 落日志并翻译常见原因（可信IP、可见范围、参数超长、频率限制等），缺参数会明确报出缺哪一项
@@ -118,15 +118,70 @@
 | `40058` | 参数不合法（User ID / Agent ID 格式），或正文超过 2048 字节 |
 | `45009` | 接口调用超过频率限制，请降低推送频率 |
 
+## 🔧 编译集成
+
+本仓库是 **LuCI 应用仓库**，包文件（`Makefile`、`root/`、`ucode/`、`po/`）直接位于**仓库根目录**，没有 `luci-app-pushbot/` 子目录。接入 OpenWrt / ImmortalWrt 源码树有两种方式。
+
+### 方式一：克隆到 `package/`（最省事，推荐）
+
+```bash
+cd openwrt                    # 你的 OpenWrt / ImmortalWrt 源码根目录
+git clone --depth=1 https://github.com/naoki66/luci-app-pushbot package/luci-app-pushbot
+make menuconfig               # LuCI → Applications → luci-app-pushbot
+```
+
+### 方式二：作为 feed 集成
+
+> ⚠️ **不能**直接写 `src-git pushbot https://github.com/naoki66/luci-app-pushbot.git`。
+>
+> feed 扫描约定"每个包必须位于 feed 的子目录里"。`scripts/feeds` 会把扫描目录设为 **`feeds/<feed名>`**（第 136 行 `SCAN_DIR="feeds/$name"`，`SCAN_DEPTH=5`），再由 `include/scan.mk` 用
+> `find -L feeds/<feed名> -mindepth 1 -maxdepth 5 -name Makefile | xargs grep -aHE 'call (Build/DefaultTargets|BuildPackage|KernelPackage)' | sed -e 's#^feeds/<feed名>/##' -e 's#/Makefile:.*##'`
+> 反推包目录名。
+>
+> 本仓库 `Makefile` 在**仓库根**、末行正是 `# call BuildPackage - OpenWrt buildroot signature`（`Makefile` 第 98 行），于是链路这样崩掉：
+>
+> 1. `find` 命中 → `feeds/pushbot/Makefile:# call BuildPackage …`
+> 2. 第一段 sed 剥掉 `feeds/pushbot/` → `Makefile:# call BuildPackage …`
+> 3. 第二段 sed 找不到 `/Makefile:` 可切（深度只有 1）→ 整行被当成"目录"写进 `.files-packageinfo.mk`
+> 4. 下一步 `awk '{print "$(SCAN_DIR)/" $0 "/Makefile"}'` 拼出含空格的路径再交给 `xargs grep`，被按空格拆成 `call`、`BuildPackage`、`OpenWrt`、`buildroot`、`signature`、`Makefile` 等词，**每个词都报一次「没有那个文件或目录」**
+> 5. 生成的 makefile 首行非法（目标模式不含 `%`）→ 索引生成失败
+
+所以要作为 feed 用，必须在外面**套一层目录**，让它满足深度 ≥ 2。用 `src-link` 最方便（软链到本地，改动即时可见，不必反复 `update`）：
+
+```bash
+mkdir -p /usr/src/pushbot-feed
+git clone --depth=1 https://github.com/naoki66/luci-app-pushbot /usr/src/pushbot-feed/luci-app-pushbot
+```
+
+在源码根目录 `feeds.conf.default` 末尾追加：
+
+```
+src-link pushbot /usr/src/pushbot-feed
+```
+
+```bash
+./scripts/feeds update pushbot
+./scripts/feeds install -a -p pushbot
+make menuconfig               # LuCI → Applications → luci-app-pushbot
+```
+
+此时扫描路径为 `feeds/pushbot/luci-app-pushbot/Makefile`（深度 2），sed 能正确切出 `luci-app-pushbot`，索引正常生成。
+
+> 提醒：上游 `scripts/feeds` 真正实现的 flag 只有 `--force` 和 `--root=<子目录>`（后者是把 `feeds/<feed名>` 指向仓库内的某个子目录）；`--directory=` 之类的写法虽然能通过行解析正则，但**没有任何代码读取它**，属于无效参数，解决不了上面的深度问题。
+
 ## 📥 下载
 
-- [luci-app-pushbot Releases](https://github.com/zzsj0928/luci-app-pushbot/releases)
+- [luci-app-pushbot Releases](https://github.com/naoki66/luci-app-pushbot/releases)
 
-### 关联下载
+### 致谢引用
 
-- [luci-app-serverchan](https://github.com/tty228/luci-app-serverchan/releases)
-- [wrtbwmon](https://github.com/brvphoenix/wrtbwmon)
-- [luci-app-wrtbwmon](https://github.com/brvphoenix/luci-app-wrtbwmon)
+本项目基于或参考了以下开源项目，在此一并致谢：
+
+- [zzsj0928/luci-app-pushbot](https://github.com/zzsj0928/luci-app-pushbot) —— 本仓库的上游原始项目
+- [tty228/luci-app-serverchan](https://github.com/tty228/luci-app-serverchan) —— 本插件的最初来源
+- [tty228/luci-app-wechatpush](https://github.com/tty228/luci-app-wechatpush) —— 企业微信应用推送渠道的参考实现
+- [brvphoenix/wrtbwmon](https://github.com/brvphoenix/wrtbwmon) —— 流量统计
+- [brvphoenix/luci-app-wrtbwmon](https://github.com/brvphoenix/luci-app-wrtbwmon) —— 流量统计 LuCI 界面
 
 ## 💡 说明
 
@@ -146,30 +201,30 @@
 
 - **新的现代 UI 设计，兼容暗黑模式，更合理的架构**
 
-<img src="https://raw.githubusercontent.com/zzsj0928/ReadmeContents/main/Pushbot/Pushbot.v5.Dark.png" width="850">
-<img src="https://raw.githubusercontent.com/zzsj0928/ReadmeContents/main/Pushbot/Pushbot.v5.Light.png" width="850">
+<img src="docs/img/Pushbot.v5.Dark.png" width="850">
+<img src="docs/img/Pushbot.v5.Light.png" width="850">
 
 <br><br/>
 
 - **通知栏：直接显示推送主题，一目了然，按设备不同分组显示**
 
-<img src="https://raw.githubusercontent.com/zzsj0928/ReadmeContents/main/Pushbot/Msg.Notification.jpg" width="500">
+<img src="docs/img/Msg.Notification.jpg" width="500">
 
 <br><br/>
 
 - **消息列表：直接显示最新推送的标题**
 
-<img src="https://raw.githubusercontent.com/zzsj0928/ReadmeContents/main/Pushbot/Msg.List.jpg" width="500">
+<img src="docs/img/Msg.List.jpg" width="500">
 
 <br><br/>
 
 - **消息内容：直接显示所有推送信息，不用二次点开再查看**
 
-<img src="https://raw.githubusercontent.com/zzsj0928/ReadmeContents/main/Pushbot/MsgContentDetials.jpeg" width="500">
+<img src="docs/img/MsgContentDetials.jpeg" width="500">
 
 ## 🍡赏我一把 Token
 **制作不易，感谢支持**
-![赞赠](https://raw.githubusercontent.com/zzsj0928/ReadmeContents/master/general/donate-zed.jpg)
+![赞赠](docs/donate.png)
 
 ## 📛 改名公告
 
@@ -181,7 +236,7 @@
 # 旧：
 # git clone https://github.com/zzsj0928/luci-app-serverchand package/luci-app-serverchand
 # 新：
-git clone https://github.com/zzsj0928/luci-app-pushbot package/luci-app-pushbot
+git clone https://github.com/naoki66/luci-app-pushbot package/luci-app-pushbot
 ```
 
 并把 `.config` 中：
