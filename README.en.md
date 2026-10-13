@@ -80,7 +80,7 @@ Full history → [changelogs.en.md](changelogs.en.md)
 
 View the current online device list in real time (hostname, MAC, IP, online time)
 
-#$# Logs
+### Logs
 
 View push logs in real time, with auto-refresh and manual clear
 
