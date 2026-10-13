@@ -2,7 +2,7 @@
 
 # 🚀 luci-app-pushbot PushBot
 
-**Router alert & log push tool** — DingTalk · WeCom · Feishu · Bark · PushPlus · PushDeer · ntfy · Gotify · WxPusher
+**Router alert & log push tool** — DingTalk · WeCom bot · WeCom app (markdown/text/mpnews) · Feishu · Bark · PushPlus · PushDeer · ntfy · Gotify · WxPusher
 
 [![GitHub release](https://img.shields.io/github/v/release/zzsj0928/luci-app-pushbot?style=flat-square&color=blue)](https://github.com/zzsj0928/luci-app-pushbot/releases)
 [![GitHub issues](https://img.shields.io/github/issues/zzsj0928/luci-app-pushbot?style=flat-square&color=orange)](https://github.com/zzsj0928/luci-app-pushbot/issues)
@@ -24,6 +24,12 @@
 
 ## 📝 Changelog
 
+- **2026-10-13** (v6.01-r15): New WeCom app channel with three push modes
+  - Added: **WeCom app** — a new channel between "WeCom bot" and "PushPlus"; fill in Corp ID / App Secret / AgentId / recipients and push to a WeCom app. The former "WeCom" channel is renamed **"WeCom bot"** to tell group bots and app messages apart
+  - Added: **Three push modes** — the in-card "Message Type" dropdown switches between **markdown / plain text / mpnews**, and the four WeCom parameters are shared by all three; see [WeCom App (Three Push Modes)](#-wecom-app-three-push-modes)
+  - Added: **Failure diagnosis** — the API `errcode`/`errmsg` is written to the log with common causes translated (trusted IP, visible range, oversized payload, rate limit, etc.); missing parameters report exactly which one is missing
+  - Compatibility: WeCom app markdown only supports the `info`/`comment`/`warning` keyword colours, so UI colour settings are ignored for this channel and colour tags are never shown as plain text
+
 - **2026-09-27** (v6.01): Online update fixes & config management
   - Fixed+Improved: **Online update** — fixed IPK update failure, lost translations (English UI) after update, and occasional hangs; wait 30s → 10s with instant refresh after install; added Clear Packages button; "untrusted" prompt no longer appears after one install (APK signature trust)
   - Added: **Config Management** — one-click factory reset, or reset system options only while keeping the current channel's Token/UID/topics
@@ -41,7 +47,7 @@ Full history → [changelogs.en.md](changelogs.en.md)
 | Module | Description |
 |--------|-------------|
 | Run Control | Enable/disable switch, compact mode (compact device list / current time / push title only) |
-| Push Mode | DingTalk, WeCom, Feishu, Bark, PushPlus (all channels), PushDeer, ntfy, Gotify, WxPusher, custom push |
+| Push Mode | DingTalk, WeCom bot, WeCom app (markdown/text/mpnews), Feishu, Bark, PushPlus (all channels), PushDeer, ntfy, Gotify, WxPusher, custom push |
 | Terminal Info | MAC device database (compact / full / network lookup), device aliases |
 | Do Not Disturb | DND hours (pause script / silent mode), MAC filter (whitelist / blacklist / interface filter, online / offline DND) |
 
@@ -77,6 +83,40 @@ View the current online device list in real time (hostname, MAC, IP, online time
 #$# Logs
 
 View push logs in real time, with auto-refresh and manual clear
+
+## 📨 WeCom App (Three Push Modes)
+
+The **WeCom app channel bundles three push modes** — switch between them with the "Message Type" dropdown in the settings card. The four parameters (Corp ID / App Secret / AgentId / recipients) are **shared by all three modes**, so you never fill them in twice.
+
+| Message type | API msgtype | Body format | Body limit | Best for |
+|:---|:---|:---|:---|:---|
+| **markdown** (default) | `markdown` | App card supporting `####` headings, `**bold**`, `>` quotes, and `info` / `comment` / `warning` keyword colours | 2048 bytes | Everyday status pushes, nicest layout |
+| **text** | `text` | Plain text with no rendering, using `•` as the bullet and `------` as the divider | 2048 bytes | Maximum compatibility, no rendering surprises |
+| **mpnews** | `mpnews` | Graphic message: title + body + thumbnail; tap the title to expand, body rendered as HTML | — | Longer content you want to read like an article |
+
+> ⚠️ App messages are capped at **2048 bytes** (the group-bot channel allows 4096). A very long device list may be rejected by the API, in which case the log reports `40058` directly.
+
+### Setup
+
+1. WeCom Admin Console → **My Enterprise** → copy the **Corp ID**
+2. **App Management** → custom app → copy the **AgentId** and the **Secret**
+3. On the same page, add the **router's public IP to "Trusted Enterprise IPs"**, otherwise fetching `access_token` returns `60020`
+4. Set **Recipients** to member accounts **inside the app's visible range**, separated by `|` (e.g. `ZhangSan|LiSi`); `@all` sends to every member of the app
+5. Pick a **Message Type**; choosing **mpnews** reveals a "Thumbnail image path" field, defaulting to the bundled `/usr/bin/pushbot/api/logo.png` (JPG/PNG within 2MB, 900×383 is ideal)
+6. Click **Save** to apply (the message type is a layout setting, so the service must restart to re-read it)
+
+### Failure Diagnosis
+
+This channel writes the API's `errcode` / `errmsg` to the log and translates it into a readable cause:
+
+| errcode | Meaning |
+|:---|:---|
+| `40001` `40014` `41001` `42001` | Wrong Corp ID / App Secret, or the `access_token` has expired |
+| `60020` | The router's public IP is not in the app's "Trusted Enterprise IPs" allowlist |
+| `81013` `60011` | A recipient is outside the app's visible range, or a User ID is wrong |
+| `40056` | Invalid Agent ID, or the app does not belong to this enterprise |
+| `40058` | Invalid parameter (User ID / Agent ID format), or the body exceeds 2048 bytes |
+| `45009` | API rate limit exceeded — lower the push frequency |
 
 ## 📥 Download
 

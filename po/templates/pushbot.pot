@@ -922,10 +922,13 @@ msgstr ""
 msgid "Watchlist"
 msgstr ""
 
-msgid "WeCom"
+msgid "WeCom Webhook"
 msgstr ""
 
-msgid "WeCom Webhook"
+msgid "WeCom app"
+msgstr ""
+
+msgid "WeCom bot"
 msgstr ""
 
 msgid "WeCom bot Webhook, enter only the part after key=<br><a href=\"https://work.weixin.qq.com/api/doc/90000/90136/91770\" target=\"_blank\">Get the code</a><br><br>"
@@ -1209,5 +1212,50 @@ msgstr ""
 
 
 msgid "Access token"
+msgstr ""
+
+msgid "Corp ID"
+msgstr ""
+
+msgid "Corp Secret"
+msgstr ""
+
+msgid "Agent ID"
+msgstr ""
+
+msgid "User ID"
+msgstr ""
+
+msgid "Company ID: WeCom admin console → My Company → Company ID<br>See <a href=\"https://work.weixin.qq.com/wework_admin/frame#profile\" target=\"_blank\">here</a> for details<br><br>"
+msgstr ""
+
+msgid "App Secret: WeCom admin console → App Management → your app → Secret<br>Also add the router public IP to the app Trusted IP list, otherwise getting access_token returns 60020<br>See <a href=\"https://work.weixin.qq.com/api/doc/90000/90135/90248\" target=\"_blank\">here</a> for details<br><br>"
+msgstr ""
+
+msgid "App AgentId: shown on the app detail page in the admin console<br>e.g. 1000002<br><br>"
+msgstr ""
+
+msgid "Recipients: member accounts within the app visible scope<br>Separate multiple accounts with |, e.g. ZhangSan|LiSi<br>Use @all to send to all members of the app<br><br>"
+msgstr ""
+
+msgid "Message Type"
+msgstr ""
+
+msgid "markdown: card layout, limited colors"
+msgstr ""
+
+msgid "text: plain text, best compatibility"
+msgstr ""
+
+msgid "mpnews: graphic message, needs a thumbnail"
+msgstr ""
+
+msgid "markdown: shown as an app card, supports info/comment/warning colors<br>text: plain text, no rendering, works everywhere<br>mpnews: graphic message with title, body and thumbnail (tap the title to expand)<br>Only mpnews needs the thumbnail path below<br>markdown/text are capped at 2048 bytes<br><br>"
+msgstr ""
+
+msgid "Thumbnail image path"
+msgstr ""
+
+msgid "Only used by mpnews, uploaded before each send<br>JPG or PNG within 2MB, best at 900x383 (2.35:1)<br>Default: /usr/bin/pushbot/api/logo.png<br><br>"
 msgstr ""
 

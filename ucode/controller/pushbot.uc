@@ -285,6 +285,7 @@ return {
 		/* scalar options */
 		let scalar_opts = [
 			"pushbot_enable","lite_enable","jsonpath","dd_webhook","we_webhook",
+			"weapp_corpid","weapp_corpsecret","weapp_agentid","weapp_userid","weapp_msgtype","weapp_mediapath",
 			"pp_token","pp_channel","pp_webhook","pp_topic_enable","pp_topic",
 			"pushdeer_key","pushdeer_srv_enable","pushdeer_srv","fs_webhook",
 			"bark_token","bark_srv_enable","bark_srv","bark_sound",
@@ -315,6 +316,10 @@ return {
 			let v = section[o];
 			if (v != null) cfg[o] = v;
 		}
+
+		/* 企业微信应用：消息类型未设置（老配置或首次使用）时默认 markdown，
+		   与主脚本 read_config 的归一化保持一致，避免下拉框落到空值 */
+		if (!cfg["weapp_msgtype"]) cfg["weapp_msgtype"] = "markdown";
 
 		/* lite_enable: may be space-separated string or list */
 		let lite_raw = section["lite_enable"];
@@ -971,6 +976,7 @@ return {
 		/* jsonpath → 前缀映射 */
 		let prefix_map = {
 			"dingding.json": "dd_",
+			"ent_wechat_app.json": "weapp_",
 			"ent_wechat.json": "we_",
 			"pushplus.json": "pp_",
 			"feishu.json": "fs_",

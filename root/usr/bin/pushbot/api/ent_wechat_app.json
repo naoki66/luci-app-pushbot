@@ -1,0 +1,52 @@
+{
+    "_api": "这是企业微信应用 api 文件（支持 markdown / text / mpnews 三种消息类型）",
+    "_api": "【企业微信应用】",
+    "_note": "应用消息需先拿 corpid+corpsecret 换 access_token，再带 agentid 发送。token 由主脚本",
+    "_note": "diy_send 预先取好放进 ${weapp_token}；图文消息的 ${weapp_thumb_media_id} 亦由脚本上传",
+    "_note": "缩略图素材后填入，模板只负责留位，避免在 url 里内联 curl（失败时噪声大且难以复用）。",
+    "_note": "type 内同时保留三种正文，diy_send 依 weapp_msgtype 用 jq 只保留对应一项；三种正文的",
+    "_note": "排版标记互不通用（文本 \\n、图文 <br>/<hr>），故排版由脚本按消息类型覆盖模板默认值。",
+    "_note": "应用 markdown 仅支持 info/comment/warning 三种颜色关键字，不支持自定义 hex，故 font_* 预设为空。",
+    "url": "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${weapp_token}",
+    "data": "@${tempjsonpath}",
+    "content_type": "Content-Type: application/json",
+    "str_title_start": "#### ",
+    "str_title_end": "",
+    "str_linefeed": "\\n",
+    "str_splitline": "\\n\\n",
+    "str_space": " ",
+    "str_tab": "> ",
+    "table_tab": "",
+    "font_success": "",
+    "font_client": "",
+    "font_fail": "",
+    "font_module": "",
+    "font_title": "",
+    "font_end": "",
+    "font_end2": "",
+    "percentsym": "",
+    "boldstar": "**",
+    "type": {
+        "touser": "\"${weapp_userid}\"",
+        "msgtype": "\"markdown\"",
+        "agentid": "\"${weapp_agentid}\"",
+        "markdown": {
+            "content": "\"${str_title_start}${1}${str_title_end}${str_linefeed}${nowtime}${str_linefeed}${2}\""
+        },
+        "text": {
+            "content": "\"${1}${str_linefeed}${nowtime}${str_linefeed}${2}\""
+        },
+        "mpnews": {
+            "articles": [
+                {
+                    "title": "\"${1} ${nowtime}\"",
+                    "thumb_media_id": "\"${weapp_thumb_media_id}\"",
+                    "author": "\"\"",
+                    "content_source_url": "\"\"",
+                    "content": "\"${2}\"",
+                    "digest": "\"\""
+                }
+            ]
+        }
+    }
+}

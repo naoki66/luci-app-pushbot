@@ -633,6 +633,9 @@ pb_ota_showCountdown(ov);
 			var hidden = makeHidden(name, isFlag ? (input.checked ? '1' : '0') : (value != null ? value : ''));
 			input.addEventListener('change', function() {
 				hidden.value = (input.type === 'checkbox') ? (input.checked ? '1' : '0') : input.value;
+				/* 隐藏域只被赋值不会触发 change，而 depends / showWhen 的条件显隐
+				   都挂在隐藏域上；这里主动派发一次，让联动跟着下拉/输入实时更新 */
+				hidden.dispatchEvent(new Event('change'));
 			});
 		}
 		wrapper._input = input;
@@ -942,7 +945,8 @@ pb_ota_showCountdown(ov);
 		var modeList = document.getElementById('pm_mode_list');
 		var modeSvgs = {
 			'{{ _('DingTalk') }}': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 8.16c-.34.88-2.17 2.36-2.17 2.36l-.03.02h.03s.86 1.14 1.22 1.68c.36.54.04.68-.5.36l-1.7-1.14-.84-.56c-.02 0-.18.14-.18.14s-1.3 1.86-1.66 2.28c-.36.42-.72.24-.62-.22.1-.46.92-2.18.92-2.18l-2.32-3.46c-.24-.36.08-.54.48-.34L12 12l2.3-1.52c.4-.26.78.02.34.68z"/></svg>',
-			'{{ _('WeCom') }}': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM8.5 6.5h7c.83 0 1.5.67 1.5 1.5v2c0 .83-.67 1.5-1.5 1.5h-7A1.5 1.5 0 0 1 7 10V8c0-.83.67-1.5 1.5-1.5zm0 6h4c.83 0 1.5.67 1.5 1.5v2c0 .83-.67 1.5-1.5 1.5h-4A1.5 1.5 0 0 1 7 16v-2c0-.83.67-1.5 1.5-1.5z"/></svg>',
+			'{{ _('WeCom bot') }}': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM8.5 6.5h7c.83 0 1.5.67 1.5 1.5v2c0 .83-.67 1.5-1.5 1.5h-7A1.5 1.5 0 0 1 7 10V8c0-.83.67-1.5 1.5-1.5zm0 6h4c.83 0 1.5.67 1.5 1.5v2c0 .83-.67 1.5-1.5 1.5h-4A1.5 1.5 0 0 1 7 16v-2c0-.83.67-1.5 1.5-1.5z"/></svg>',
+			'{{ _('WeCom app') }}': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4.6a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2zm0 12.6a7.6 7.6 0 0 1-5.3-2.2c.9-2 3-3.3 5.3-3.3s4.4 1.3 5.3 3.3A7.6 7.6 0 0 1 12 19.2z"/></svg>',
 			'{{ _('Feishu') }}': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.5 6h3c.83 0 1.5.67 1.5 1.5v1c0 .83-.67 1.5-1.5 1.5h-3A1.5 1.5 0 0 1 9 10.5v-1c0-.83.67-1.5 1.5-1.5zm0 4h5c.83 0 1.5.67 1.5 1.5v1c0 .83-.67 1.5-1.5 1.5h-5A1.5 1.5 0 0 1 9 13v-1c0-.83.67-1.5 1.5-1.5z"/></svg>',
 			'Bark': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>',
 			'ntfy': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>',
@@ -954,7 +958,8 @@ pb_ota_showCountdown(ov);
 		};
 		var modeOpts = [
 			{ v: '/usr/bin/pushbot/api/dingding.json', l: '{{ _('DingTalk') }}' },
-			{ v: '/usr/bin/pushbot/api/ent_wechat.json', l: '{{ _('WeCom') }}' },
+			{ v: '/usr/bin/pushbot/api/ent_wechat.json', l: '{{ _('WeCom bot') }}' },
+			{ v: '/usr/bin/pushbot/api/ent_wechat_app.json', l: '{{ _('WeCom app') }}' },
 			{ v: '/usr/bin/pushbot/api/pushplus.json', l: '{{ _('PushPlus') }}' },
 			{ v: '/usr/bin/pushbot/api/wxpusher.json', l: '{{ _('WxPusher') }}' },
 			{ v: '/usr/bin/pushbot/api/feishu.json', l: '{{ _('Feishu') }}' },
@@ -997,6 +1002,14 @@ pb_ota_showCountdown(ov);
 			],
 			'/usr/bin/pushbot/api/ent_wechat.json': [
 				{ name: 'we_webhook', type: 'text', label: '{{ _('Webhook') }}', desc: '{{ _('WeCom bot Webhook, enter only the part after key=<br><a href="https://work.weixin.qq.com/api/doc/90000/90136/91770" target="_blank">Get the code</a><br><br>') }}'},
+			],
+			'/usr/bin/pushbot/api/ent_wechat_app.json': [
+				{ name: 'weapp_msgtype', type: 'select', label: '{{ _('Message Type') }}', choices: [{v:'markdown',l:'{{ _('markdown: card layout, limited colors') }}'},{v:'text',l:'{{ _('text: plain text, best compatibility') }}'},{v:'mpnews',l:'{{ _('mpnews: graphic message, needs a thumbnail') }}'}], desc: '{{ _('markdown: shown as an app card, supports info/comment/warning colors<br>text: plain text, no rendering, works everywhere<br>mpnews: graphic message with title, body and thumbnail (tap the title to expand)<br>Only mpnews needs the thumbnail path below<br>markdown/text are capped at 2048 bytes<br><br>') }}'},
+				{ name: 'weapp_corpid', type: 'text', label: '{{ _('Corp ID') }}', desc: '{{ _('Company ID: WeCom admin console → My Company → Company ID<br>See <a href="https://work.weixin.qq.com/wework_admin/frame#profile" target="_blank">here</a> for details<br><br>') }}'},
+				{ name: 'weapp_corpsecret', type: 'text', label: '{{ _('Corp Secret') }}', desc: '{{ _('App Secret: WeCom admin console → App Management → your app → Secret<br>Also add the router public IP to the app Trusted IP list, otherwise getting access_token returns 60020<br>See <a href="https://work.weixin.qq.com/api/doc/90000/90135/90248" target="_blank">here</a> for details<br><br>') }}'},
+				{ name: 'weapp_agentid', type: 'text', label: '{{ _('Agent ID') }}', desc: '{{ _('App AgentId: shown on the app detail page in the admin console<br>e.g. 1000002<br><br>') }}'},
+				{ name: 'weapp_userid', type: 'text', label: '{{ _('User ID') }}', desc: '{{ _('Recipients: member accounts within the app visible scope<br>Separate multiple accounts with |, e.g. ZhangSan|LiSi<br>Use @all to send to all members of the app<br><br>') }}'},
+				{ name: 'weapp_mediapath', type: 'text', label: '{{ _('Thumbnail image path') }}', showWhen: { field: 'weapp_msgtype', values: ['mpnews'] }, desc: '{{ _('Only used by mpnews, uploaded before each send<br>JPG or PNG within 2MB, best at 900x383 (2.35:1)<br>Default: /usr/bin/pushbot/api/logo.png<br><br>') }}'},
 			],
 			'/usr/bin/pushbot/api/pushplus.json': [
 				{ name: 'pp_token', type: 'text', label: '{{ _('PushPlus Token') }}', desc: '{{ _('Get the code') }} <a href=\'http://pushplus.plus/doc/\' target=\'_blank\'>{{ _('here') }}</a><br><br>'},
@@ -4010,6 +4023,7 @@ function pbShowToast(ok) {
 var PB_LABELS = {
 	pushbot_enable:'{{ _('Enabled') }}', lite_enable:'{{ _('Compact Mode') }}', device_name:'{{ _('Device name') }}', sleeptime:'{{ _('Detection interval') }}',
 	jsonpath:'{{ _('Push Mode') }}', dd_webhook:'{{ _('DingTalk Webhook') }}', we_webhook:'{{ _('WeCom Webhook') }}', fs_webhook:'{{ _('Feishu Webhook') }}',
+	weapp_corpid:'{{ _('Corp ID') }}', weapp_corpsecret:'{{ _('Corp Secret') }}', weapp_agentid:'{{ _('Agent ID') }}', weapp_userid:'{{ _('User ID') }}', weapp_msgtype:'{{ _('Message Type') }}', weapp_mediapath:'{{ _('Thumbnail image path') }}',
 	pp_token:'PushPlus Token', pp_channel:'PushPlus Channel', pp_webhook:'PushPlus Webhook',
 	pp_topic_enable:'{{ _('PushPlus group push') }}', pp_topic:'PushPlus Topic',
 	pushdeer_key:'PushDeer Key', pushdeer_srv_enable:'{{ _('Self-hosted PushDeer') }}', pushdeer_srv:'PushDeer Server',

@@ -21,7 +21,7 @@ function read_config(){
 	"dnd_low_range" \
 	"up_timeout" "down_timeout" "timeout_retry_count" "thread_num" "soc_code" "pve_host" "pve_port"\
 	"err_enable" "err_sheep_enable" "err_device_aliases" "network_err_event" "system_time_event" "autoreboot_time" "network_restart_time" "public_ip_event" "public_ip_retry_count" \
-	"jsonpath" "dd_webhook" "we_webhook" "pp_token" "pp_channel" "pp_webhook" "pp_topic_enable" "pp_topic" "fs_webhook" "pushdeer_key" "pushdeer_srv_enable" "pushdeer_srv" "bark_srv_enable" "bark_srv" "bark_token" "bark_sound" "bark_icon" "bark_icon_enable" "bark_level" "ntfy_srv_enable" "ntfy_server" "ntfy_topic" "ntfy_token_enable" "ntfy_token" "ntfy_priority" "gotify_server" "gotify_token" "gotify_priority" "wxpusher_app_token" "wxpusher_uids_enable" "wxpusher_uids" "wxpusher_topics_enable" "wxpusher_topics" \
+	"jsonpath" "dd_webhook" "we_webhook" "weapp_corpid" "weapp_corpsecret" "weapp_agentid" "weapp_userid" "weapp_msgtype" "weapp_mediapath" "pp_token" "pp_channel" "pp_webhook" "pp_topic_enable" "pp_topic" "fs_webhook" "pushdeer_key" "pushdeer_srv_enable" "pushdeer_srv" "bark_srv_enable" "bark_srv" "bark_token" "bark_sound" "bark_icon" "bark_icon_enable" "bark_level" "ntfy_srv_enable" "ntfy_server" "ntfy_topic" "ntfy_token_enable" "ntfy_token" "ntfy_priority" "gotify_server" "gotify_token" "gotify_priority" "wxpusher_app_token" "wxpusher_uids_enable" "wxpusher_uids" "wxpusher_topics_enable" "wxpusher_topics" \
 	"font_title" "font_success" "font_fail" "font_client" "font_module"
 	
 	# WxPusher: 根据 enable 状态处理数组，未 enable 的直接设为空数组
@@ -102,6 +102,17 @@ function read_config(){
 	[ -z "$timeout_retry_count" ] && timeout_retry_count="2";[ "$timeout_retry_count" -eq "0" ] && timeout_retry_count="1"
 	[ ! -z "$bark_token" ] && [ -z "$bark_srv" ] && bark_srv="https://api.day.app"
 	[ ! -z "$pushdeer_key" ] && [ -z "$pushdeer_srv" ] && pushdeer_srv="https://api2.pushdeer.com"
+	# 企业微信应用：AgentId 官方要求整型，且必须为纯数字才能安全拼进请求体
+	# （非数字会生成非法 JSON 或触发 40058）。去空白后校验，不合法直接清空，
+	# 交由 diy_send / pushbot_init 报"缺少参数"，避免报错信息难以定位。
+	weapp_agentid=`echo "$weapp_agentid" | tr -d ' \t'`
+	echo "$weapp_agentid" | grep -qE '^[0-9]+$' || weapp_agentid=""
+	# 企业微信应用消息类型：markdown(默认)/text/mpnews。未设置或非法值一律回落 markdown，
+	# 保证 diy_send 里的正文裁剪与样式覆盖永远拿到合法值。
+	case "$weapp_msgtype" in
+		text|mpnews) ;;
+		*) weapp_msgtype="markdown" ;;
+	esac
 	
 # 字符串读取
 	str_title_start=`/usr/bin/jq -r '.str_title_start' ${jsonpath}`
@@ -113,6 +124,10 @@ function read_config(){
 	str_splitline="${str_splitline%X}"
 	str_space=`/usr/bin/jq -r '.str_space' ${jsonpath}`
 	str_tab=`/usr/bin/jq -r '.str_tab' ${jsonpath}`
+	# 企业微信应用 markdown 仅识别 info/comment/warning 三个颜色关键字, 不支持自定义 hex 色值。
+	# 清空界面传来的色值 → 下方回落逻辑改用模板预设(该渠道预设为空), 不产生任何 font 标签,
+	# 避免 <font color=#RRGGBB> 被当作文本原样显示。
+	[ "$jsonpath" = "/usr/bin/pushbot/api/ent_wechat_app.json" ] && unset font_title font_success font_fail font_client font_module
 	# 颜色:预设取自 json 中的完整 <font color=...> 标签(缺失/空则保持无色);
 	# uci 自定义合法色值优先组装,空/非法沿用预设,同时阻断注入
 	_f=`/usr/bin/jq -r '.font_title' ${jsonpath}` 2>/dev/null; [ "$_f" = "null" ] && _f=""
@@ -145,6 +160,31 @@ function read_config(){
 	esac
 	# ntfy 纯文本: 不支持表格/markdown, 强制非表格
 	( echo "${jsonpath}"|grep -q "ntfy" ) && table_enable=""
+	# 企业微信应用：三种消息类型（markdown / 纯文本 / 图文）的排版标记互不通用，模板里
+	# 只存一份默认(markdown)排版，这里按所选消息类型整体覆盖。必须在所有 str_*/bold*
+	# 读取之后执行，否则会被模板取值覆盖回去。
+	if [ "$jsonpath" = "/usr/bin/pushbot/api/ent_wechat_app.json" ]; then
+		case "$weapp_msgtype" in
+			text)
+				# 纯文本：不做任何标记渲染，用符号代替标题层级与缩进
+				str_title_start="• "; str_title_end=""
+				str_linefeed="\\n"; str_splitline="\\n------\\n"; str_tab="> "
+				boldstar=""; boldend=""
+				;;
+			mpnews)
+				# 图文消息正文只认 HTML，不解析 Markdown
+				str_title_start="<b>"; str_title_end="</b>"
+				str_linefeed="<br>"; str_splitline="<hr>"; str_tab=""
+				boldstar="<b>"; boldend="</b>"
+				;;
+			*)
+				# markdown：应用端只支持 #### 标题、** 加粗、> 引用等有限语法
+				str_title_start="#### "; str_title_end=""
+				str_linefeed="\\n"; str_splitline="\\n\\n"; str_tab="> "
+				boldstar="**"; boldend="**"
+				;;
+		esac
+	fi
 	( echo "$lite_enable"|grep -q "content" ) && str_title_start="" && str_title_end="" && str_splitline="" && str_linefeed="" && str_tab=""
 }
 	
@@ -183,7 +223,15 @@ function pushbot_init(){
 	*dingding.json)
 		_ch="钉钉"; [ -z "$dd_webhook" ] && _miss="dd_webhook(Webhook)" ;;
 	*ent_wechat.json)
-		_ch="企业微信"; [ -z "$we_webhook" ] && _miss="we_webhook(Webhook)" ;;
+		_ch="企业微信机器人"; [ -z "$we_webhook" ] && _miss="we_webhook(Webhook)" ;;
+	*ent_wechat_app.json)
+		_ch="企业微信应用"
+		# 应用消息四个参数缺一不可, 按顺序报出第一个缺失项(只报一个, 便于用户逐个补齐)
+		if [ -z "$weapp_corpid" ]; then _miss="weapp_corpid(Corp ID)"
+		elif [ -z "$weapp_corpsecret" ]; then _miss="weapp_corpsecret(Corp Secret)"
+		elif [ -z "$weapp_agentid" ]; then _miss="weapp_agentid(Agent ID)"
+		elif [ -z "$weapp_userid" ]; then _miss="weapp_userid(User ID)"
+		fi ;;
 	*pushplus.json)
 		_ch="PushPlus"; [ -z "$pp_token" ] && _miss="pp_token(Token)" ;;
 	*feishu.json)
@@ -385,6 +433,21 @@ table_grid_wrap() {
 
 # 推送
 function diy_send(){
+	# 企业微信应用：四个参数缺一不可，缺一个就没法取 token 或拼请求体。
+	# send()/pushbot_init 的校验只在服务启动路径生效，test(手动测试)、send(定时任务)
+	# 都直接进本函数，故这里必须再兜底一次，否则只会得到笼统的"推送失败"。
+	if ( echo "${3}"|grep -q "ent_wechat_app" ); then
+		local _weapp_miss=""
+		[ -z "$weapp_corpid" ] && _weapp_miss="${_weapp_miss}Corp ID "
+		[ -z "$weapp_corpsecret" ] && _weapp_miss="${_weapp_miss}Corp Secret "
+		[ -z "$weapp_agentid" ] && _weapp_miss="${_weapp_miss}Agent ID "
+		[ -z "$weapp_userid" ] && _weapp_miss="${_weapp_miss}User ID "
+		if [ -n "$_weapp_miss" ]; then
+			_weapp_miss="${_weapp_miss% }"
+			echo "`date "+%Y-%m-%d %H:%M:%S"` 【！！！】企业微信应用：缺少必填参数（当前渠道 企业微信应用 缺少：${_weapp_miss}）" >> ${logfile}
+			return 1
+		fi
+	fi
 	# ntfy: 纯文本消息(body=内容) + Title/Priority/Token headers(移动端不渲染 markdown, 用纯文本)
 	if ( echo "${3}"|grep -q "ntfy" ); then
 		# topic 固定使用设备名称(device_name)
@@ -431,16 +494,87 @@ function diy_send(){
 		set -- "$1" "${_card_open}${_card_body}</div>" "${3}"
 	fi
 	( ! echo "$lite_enable"|grep -q "content" ) && ( ! echo "$lite_enable"|grep -q "nowtime" ) && local nowtime=`date "+%Y-%m-%d %H:%M:%S"`
+	# 企业微信应用: access_token 与图文消息的缩略图素材都要先在脚本里取好, 再交给模板
+	# 的 url/type 展开(模板里 ${weapp_token} / ${weapp_thumb_media_id} 就是为它们留的位置)。
+	# 这样只调一次 gettoken, 发送与素材上传复用同一个 token; 取失败时 token 为空, url 尾
+	# 部落成 access_token=(空), 由下方统一报错, 日志可定位。
+	if ( echo "${3}"|grep -q "ent_wechat_app" ); then
+		weapp_token=`curl -s -m 10 "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=${weapp_corpid}&corpsecret=${weapp_corpsecret}"|/usr/bin/jq -r '.access_token' 2>/dev/null`
+		[ "$weapp_token" = "null" ] && weapp_token=""
+		weapp_thumb_media_id=""
+		if [ "$weapp_msgtype" = "mpnews" ] && [ ! -z "$weapp_token" ]; then
+			[ -z "$weapp_mediapath" ] && weapp_mediapath="/usr/bin/pushbot/api/logo.png"
+			if [ ! -f "$weapp_mediapath" ]; then
+				echo "`date "+%Y-%m-%d %H:%M:%S"` 【！！！】企业微信应用：缩略图文件不存在（${weapp_mediapath}），图文消息需要一个 2MB 以内的 JPG/PNG" >> ${logfile}
+				return 1
+			fi
+			weapp_thumb_media_id=`curl -s -m 20 "https://qyapi.weixin.qq.com/cgi-bin/media/upload?access_token=${weapp_token}&type=image" -F "file=@${weapp_mediapath}"|/usr/bin/jq -r '.media_id' 2>/dev/null`
+			if [ -z "$weapp_thumb_media_id" ] || [ "$weapp_thumb_media_id" = "null" ]; then
+				echo "`date "+%Y-%m-%d %H:%M:%S"` 【！！！】企业微信应用：缩略图素材上传失败，仅支持 2MB 以内的 JPG/PNG" >> ${logfile}
+				return 1
+			fi
+		fi
+	fi
 	local diyurl=`/usr/bin/jq -r .url ${3}` && local diyurl=`eval echo ${diyurl} 2>/dev/null`
+	# 企业微信应用: access_token 由脚本取好后填入模板 url, 换取失败时 url 尾部会退化成
+	# access_token=(空)(多见于 Corp ID/Secret 错误, 或未在企业微信后台为该应用配置
+	# "企业可信IP"), 此时必然推送失败。直接给出明确日志, 便于定位, 避免只看到笼统的
+	# "推送失败"。
+	if ( echo "${3}"|grep -q "ent_wechat_app" ); then
+		case "$diyurl" in
+			*access_token= | *access_token=null)
+				echo "`date "+%Y-%m-%d %H:%M:%S"` 【！！！】企业微信应用：获取 access_token 失败，请检查 Corp ID / Corp Secret，并确认已为该应用配置企业可信 IP" >> ${logfile}
+				return 1 ;;
+		esac
+	fi
 	local type=`/usr/bin/jq -r '.type' ${3}` && local type=`eval echo ${type} 2>/dev/null`
 	local data=`/usr/bin/jq -r '.data' ${3}` && local data=`eval echo ${data} 2>/dev/null`
 	local content_type=`/usr/bin/jq -r '.content_type' ${3}`
-	/usr/bin/jq ".type + $type" ${jsonpath} > ${tempjsonpath}
+	# 企业微信应用：agentid 官方要求整型（传字符串会报 40058），而模板机制只能产出
+	# 字符串，这里在写盘前把 agentid 转成数字，保证请求体符合接口要求；模板里三种
+	# 消息类型的正文都预置着，再按 weapp_msgtype 只留下对应的一份（顺带清掉其余项，
+	# 避免把无关字段一起发给接口）。
+	if ( echo "${3}"|grep -q "ent_wechat_app" ); then
+		/usr/bin/jq ".type + $type | .agentid |= tonumber" ${jsonpath} > ${tempjsonpath}
+		/usr/bin/jq --arg mt "${weapp_msgtype:-markdown}" '
+			if $mt == "text" then { touser, agentid, msgtype: "text", text }
+			elif $mt == "mpnews" then { touser, agentid, msgtype: "mpnews", mpnews }
+			else { touser, agentid, msgtype: "markdown", markdown } end' \
+			${tempjsonpath} > ${tempjsonpath}.mt \
+			&& mv -f ${tempjsonpath}.mt ${tempjsonpath} \
+			|| { echo "`date "+%Y-%m-%d %H:%M:%S"` 【！！！】企业微信应用：请求体生成失败（消息类型 ${weapp_msgtype}）" >> ${logfile}; return 1; }
+	else
+		/usr/bin/jq ".type + $type" ${jsonpath} > ${tempjsonpath}
+	fi
 	/usr/bin/jq -r '.[]' ${tempjsonpath}|grep -w "null" && echo "`date "+%Y-%m-%d %H:%M:%S"` 【！！！】参数值错误，请检查设置项  `/usr/bin/jq -r '.' ${tempjsonpath}|grep "null"`" >> ${logfile} && return 1
 	[ -f ${tempjsonpath} ] && local logrow=$(grep -c "" ${tempjsonpath}) || local logrow="0"
 	[ $logrow -eq "0" ] && echo "`date "+%Y-%m-%d %H:%M:%S"` 【！！！】json 文件生成失败，请检查文件格式" >> ${logfile} && return 1
 	/usr/bin/jq -r '.[]' ${tempjsonpath}|grep "null" && echo "`date "+%Y-%m-%d %H:%M:%S"` 【！！！】参数变量生成失败，请检查设置项 `/usr/bin/jq -r '.' ${tempjsonpath}|grep "null"`" >> ${logfile}
 	
+	# 企业微信应用：失败原因只在响应体的 errcode/errmsg 里（可信IP未配置 60020、
+	# 接收人不在可见范围 81013、内容超长 40058 等），而 --fail 会把响应体丢掉。
+	# 故单独取回响应体，errcode 非 0 时把错误码与常见原因落日志，便于直接定位。
+	if ( echo "${3}"|grep -q "ent_wechat_app" ); then
+		local _weapp_resp="" _weapp_rc=0
+		_weapp_resp=`curl -s -m 15 -X POST -H "$content_type" -d "${data}" "${diyurl}"`; _weapp_rc=$?
+		local _weapp_ec=`printf '%s' "$_weapp_resp" | /usr/bin/jq -r '.errcode' 2>/dev/null`
+		[ "$_weapp_rc" -eq 0 ] && [ "$_weapp_ec" = "0" ] && return 0
+		local _weapp_em=`printf '%s' "$_weapp_resp" | /usr/bin/jq -r '.errmsg' 2>/dev/null`
+		local _weapp_hint=""
+		case "$_weapp_ec" in
+			40001|40014|41001|42001) _weapp_hint="Corp ID / Corp Secret 错误或 access_token 失效，请核对参数" ;;
+			60020) _weapp_hint="路由器公网 IP 不在该应用的「企业可信IP」白名单中" ;;
+			81013|60011) _weapp_hint="接收人不在该应用可见范围内，或 User ID 填写错误" ;;
+			40056) _weapp_hint="Agent ID 无效，或该应用不属于当前企业" ;;
+			40058) _weapp_hint="参数不合法（User ID / Agent ID 格式，或消息内容超过 2048 字节上限）" ;;
+			45009) _weapp_hint="接口调用超过频率限制，请适当降低推送频率" ;;
+		esac
+		if [ -z "$_weapp_hint" ]; then
+			[ -z "$_weapp_ec" ] && _weapp_hint="无法解析接口响应（网络异常或返回非 JSON）" || _weapp_hint="未知错误"
+		fi
+		echo "`date "+%Y-%m-%d %H:%M:%S"` 【！！！】企业微信应用推送失败：errcode=${_weapp_ec} errmsg=${_weapp_em} —— ${_weapp_hint}" >> ${logfile}
+		return 1
+	fi
 	curl -m 15 --fail -X POST -H "$content_type" -d "${data}" "${diyurl}"
 }
 
@@ -2710,7 +2844,8 @@ function send(){
 	[ ! -z "$device_name" ] && local send_title="【$device_name】${send_title}"
 	[ -z "$send_content" ] && local send_content="${str_splitline}${str_title_start} 我遇到了一个难题${str_title_end}${str_linefeed}${str_tab}定时发送选项错误，你没有选择需要发送的项目，该怎么办呢${str_splitline}"
 	# 去掉开头 str_splitline 字面(避免与模板"时间后换行"叠加成 3 空行)
-	send_content=$(printf '%s' "$send_content" | sed 's/^\\n\\n---\\n\\n//; s/^\\n\\n//')
+	# <hr> 是企业微信应用"图文消息"的段落分隔符(HTML 排版), 同样去掉开头那一个
+	send_content=$(printf '%s' "$send_content" | sed 's/^\\n\\n---\\n\\n//; s/^\\n\\n//; s/^<hr>//')
 	# 清洗双引号为单引号, 避免 eval echo 展开模板后破坏 JSON(飞书等卡片模板对特殊字符敏感)
 	send_title=`echo "$send_title"|tr '"' "'"`
 	send_content=`echo "$send_content"|tr '"' "'"`

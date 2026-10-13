@@ -981,11 +981,14 @@ msgstr "当前流量源为 nlbwmon，每天零点重置流量数据库不会生�
 msgid "Watchlist"
 msgstr "关注列表"
 
-msgid "WeCom"
-msgstr "企业微信"
-
 msgid "WeCom Webhook"
 msgstr "企业微信Webhook"
+
+msgid "WeCom app"
+msgstr "企业微信应用"
+
+msgid "WeCom bot"
+msgstr "企业微信机器人"
 
 msgid "WeCom bot Webhook, enter only the part after key=<br><a href=\"https://work.weixin.qq.com/api/doc/90000/90136/91770\" target=\"_blank\">Get the code</a><br><br>"
 msgstr "企业微信机器人 Webhook，只输入key=后面的即可<br><a href=\"https://work.weixin.qq.com/api/doc/90000/90136/91770\" target=\"_blank\">调用代码获取</a><br><br>"
@@ -1457,3 +1460,48 @@ msgstr "保存并测试"
 
 msgid "Current changes are not saved. This will save the configuration first, then run the test. Continue?"
 msgstr "当前配置有未保存的改动，将先保存配置再进行测试，是否继续？"
+
+msgid "Corp ID"
+msgstr "企业ID"
+
+msgid "Corp Secret"
+msgstr "应用密钥"
+
+msgid "Agent ID"
+msgstr "应用ID"
+
+msgid "User ID"
+msgstr "接收人"
+
+msgid "Company ID: WeCom admin console → My Company → Company ID<br>See <a href=\"https://work.weixin.qq.com/wework_admin/frame#profile\" target=\"_blank\">here</a> for details<br><br>"
+msgstr "企业ID：企业微信管理后台 → 我的企业 → 企业ID<br>详见<a href=\"https://work.weixin.qq.com/wework_admin/frame#profile\" target=\"_blank\">此处</a><br><br>"
+
+msgid "App Secret: WeCom admin console → App Management → your app → Secret<br>Also add the router public IP to the app Trusted IP list, otherwise getting access_token returns 60020<br>See <a href=\"https://work.weixin.qq.com/api/doc/90000/90135/90248\" target=\"_blank\">here</a> for details<br><br>"
+msgstr "应用密钥：企业微信管理后台 → 应用管理 → 你的应用 → Secret<br>同时需把路由器公网 IP 加入该应用的「企业可信IP」，否则获取 access_token 会返回 60020 错误<br>详见<a href=\"https://work.weixin.qq.com/api/doc/90000/90135/90248\" target=\"_blank\">此处</a><br><br>"
+
+msgid "App AgentId: shown on the app detail page in the admin console<br>e.g. 1000002<br><br>"
+msgstr "应用 AgentId：在管理后台该应用详情页可见<br>例如 1000002<br><br>"
+
+msgid "Recipients: member accounts within the app visible scope<br>Separate multiple accounts with |, e.g. ZhangSan|LiSi<br>Use @all to send to all members of the app<br><br>"
+msgstr "接收人：该应用可见范围内的成员账号<br>多个账号用 | 分隔，例如 ZhangSan|LiSi<br>填写 @all 可发送给该应用的全部成员<br><br>"
+
+msgid "Message Type"
+msgstr "消息类型"
+
+msgid "markdown: card layout, limited colors"
+msgstr "markdown：卡片排版，支持有限配色"
+
+msgid "text: plain text, best compatibility"
+msgstr "text：纯文本，兼容性最好"
+
+msgid "mpnews: graphic message, needs a thumbnail"
+msgstr "mpnews：图文消息，需要缩略图"
+
+msgid "markdown: shown as an app card, supports info/comment/warning colors<br>text: plain text, no rendering, works everywhere<br>mpnews: graphic message with title, body and thumbnail (tap the title to expand)<br>Only mpnews needs the thumbnail path below<br>markdown/text are capped at 2048 bytes<br><br>"
+msgstr "markdown：以应用卡片渲染，支持 info/comment/warning 三种颜色<br>text：纯文本不渲染，兼容性最好<br>mpnews：图文消息（标题+正文+缩略图，点标题展开全文）<br>仅 mpnews 需要下方缩略图路径<br>markdown/text 内容上限 2048 字节<br><br>"
+
+msgid "Thumbnail image path"
+msgstr "缩略图路径"
+
+msgid "Only used by mpnews, uploaded before each send<br>JPG or PNG within 2MB, best at 900x383 (2.35:1)<br>Default: /usr/bin/pushbot/api/logo.png<br><br>"
+msgstr "仅图文消息使用，每次发送前会重新上传<br>支持 2MB 以内的 JPG/PNG，最佳 900x383（2.35:1）<br>默认：/usr/bin/pushbot/api/logo.png<br><br>"

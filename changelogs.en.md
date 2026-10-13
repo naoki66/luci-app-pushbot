@@ -1,5 +1,19 @@
 # Changelog
 
+- **2026-10-13** (v6.01-r15): WeCom app now supports three message types
+  - Added: **Message Type** — a dropdown inside the "WeCom app" channel to switch between **markdown / text / mpnews**; the four WeCom credentials are shared, no need to fill them twice
+  - Added: **mpnews (graphic message)** — pushes an article card (title + body + thumbnail, tap the title to expand), body rendered as HTML; the thumbnail is uploaded before each send to obtain `thumb_media_id`, and a default image ships at `/usr/bin/pushbot/api/logo.png` (a custom path is also supported: JPG/PNG within 2MB, best at 900x383)
+  - Improved: **access_token is now fetched by the script** — the template url uses the `${weapp_token}` placeholder so the send request and the media upload share one `gettoken` call; failures still surface as an empty `access_token=` and trigger the existing diagnostics
+  - Fixed: **conditional fields now update live** — `showWhen` linked hidden inputs were assigned without firing a change event; the event is now dispatched so the thumbnail path field appears/hides as the message type changes (also fixes the same issue for the PushPlus "Channel Code" field)
+  - Compatibility: the three message types use incompatible markup, so the whole formatting set is overridden per type (text uses `•`/`------`, mpnews uses `<b>`/`<br>`/`<hr>`, markdown uses `####`/`**`/`>`) instead of injecting Markdown syntax into plain text or HTML bodies
+
+- **2026-10-13** (v6.01-r14): New WeCom app push channel
+  - Added: **WeCom app** — a new channel placed between "WeCom bot" and "PushPlus"; fill in Corp ID, App Secret, AgentId and recipients to push to a WeCom app (send to specific members or `@all`, content rendered as markdown); `access_token` is obtained inline by the template, no extra script needed
+  - Changed: the former "WeCom" channel is renamed to **"WeCom bot"** to distinguish group bots from app messages
+  - Added: **failure diagnostics** — the channel logs the API `errcode`/`errmsg` and explains common causes: `60020` trusted IP not configured, `81013`/`60011` recipient outside the app visible scope, `40058` invalid parameter or body over 2048 bytes, `40001`/`40014` wrong credentials or expired token, `45009` rate limit exceeded; missing parameters are also reported explicitly (works for the manual test too)
+  - Compatibility: WeCom app markdown only supports the `info`/`comment`/`warning` colour keywords, not custom hex values; this channel ignores the UI colour settings so colour tags are never shown as plain text
+  - Note: app message bodies are capped at 2048 bytes (group bots allow 4096); a very long device list may be rejected by the API, in which case the log reports `40058` directly
+
 - **2026-09-27** (v6.01): Online update fixes & config management
   - Fixed+Improved: **Online update** — fixed IPK update failure, lost translations (English UI) after update, and occasional hangs; wait 30s → 10s with instant refresh after install; added Clear Packages button; "untrusted" prompt no longer appears after one install (APK signature trust)
   - Added: **Config Management** — one-click factory reset, or reset system options only while keeping the current channel's Token/UID/topics
