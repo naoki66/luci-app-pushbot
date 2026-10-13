@@ -10,7 +10,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/naoki66/luci-app-pushbot?style=flat-square&color=yellow)](https://github.com/naoki66/luci-app-pushbot/stargazers)
 [![GitHub license](https://img.shields.io/github/license/naoki66/luci-app-pushbot?style=flat-square)](LICENSE)
 
-[简体中文](../README.md) | **English**
+[简体中文](README.md) | **English**
 
 </div>
 
@@ -223,7 +223,7 @@ This project is based on or references the following open-source projects — ma
 
 ## 🍡Buy me a cup of TOKEN 😜
 **Appreciate Your Like!**
-![Awards](docs/donate.png)
+![Awards](docs/img/donate.png)
 
 ## 📛 Rename Notice
 

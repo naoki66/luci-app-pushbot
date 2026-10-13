@@ -224,7 +224,7 @@ make menuconfig               # LuCI → Applications → luci-app-pushbot
 
 ## 🍡赏我一把 Token
 **制作不易，感谢支持**
-![赞赠](docs/donate.png)
+![赞赠](docs/img/donate.png)
 
 ## 📛 改名公告
 
