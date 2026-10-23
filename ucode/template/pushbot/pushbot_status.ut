@@ -5437,8 +5437,9 @@ window.addEventListener('DOMContentLoaded', function() {
 var PB_THEME_CFG={argon_mode:'{{ pushbot_argon_mode }}',liquid_mode:'{{ pushbot_liquid_mode }}'};
 /* ═══ 主题模式检测（liquid/argon/zargon/系统）═══
  * 1. body[data-liquid-mode](liquid) / html[data-theme-mode](统一标准) / html[data-darkmode]
- * 2. argon/zargon: 服务端内联 <style> 的 body{background:暗色}(#1e1e1e 等), 色值 < #888888 判暗黑(用户约定)
- * 3. fallback: 服务端 uci config(argon/liquid mode) + getComputedStyle 背景亮度 + prefers-color-scheme
+ * 2. Argon v3: html[data-argon-mode=dark|light|normal]（normal=跟随系统）
+ * 3. argon v2/zargon: head 内联 <style> 的 body{background:暗色}(#1e1e1e 等), 色值 < #888888 判暗黑(用户约定)
+ * 4. fallback: 服务端 uci config(argon/liquid mode) + getComputedStyle 背景亮度 + prefers-color-scheme
  * 监听: 系统模式变化 + MutationObserver(html/body 属性) + load 兜底(不轮询) */
 (function(){
 var b=document.body;if(!b)return;
@@ -5453,16 +5454,23 @@ function themeMode(){
 	var v=d.getAttribute('data-darkmode');
 	if(v==='true')return 'dark';
 	if(v==='false')return 'light';
+	/* Argon v3: <html data-argon-mode="dark|light|normal">, normal 为跟随系统 */
+	var am3=d.getAttribute('data-argon-mode');
+	if(am3==='dark')return 'dark';
+	if(am3==='light')return 'light';
+	if(am3==='normal')return 'auto';
 	var hlm=d.getAttribute('data-liquid-mode');
 	if(hlm==='dark'||hlm==='light'||hlm==='auto')return hlm;
 	return null;
 }
-/* argon/zargon: 服务端内联 style 判定(无正则, indexOf 定位)
+/* argon v2/zargon: 服务端内联 style 判定(无正则, indexOf 定位)
+ * 只看 head 里的 style：argon v2 在 head 输出 body{background:...}；
+ * 本插件自己的 <style> 在 body 内容里，会命中 #ffffff 误判为亮色
  * 强制暗黑: body{background:#1e1e1e} 顶层 → 色值 < #888888 判暗黑
  * 自动: 暗黑背景在 @media (prefers-color-scheme: dark) 内 → 跟随系统(auto) */
 function styleBodyBg(){
 	var isHex=function(c){return (c>='0'&&c<='9')||(c>='a'&&c<='f')||(c>='A'&&c<='F');};
-	var styles=document.querySelectorAll('style');
+	var styles=document.querySelectorAll('head style');
 	for(var i=0;i<styles.length;i++){
 		var t=styles[i].textContent||'';
 		var bi=t.indexOf('background: #');
@@ -5497,6 +5505,7 @@ function compute(){
 	var am=PB_THEME_CFG.argon_mode;
 	if(am==='dark')return true;
 	if(am==='light')return false;
+	if(am==='normal')return !!(mq&&mq.matches);
 	var bg=getComputedStyle(b).backgroundColor||'';
 	var rgb=bg.match(/\d+/g);
 	if(rgb&&rgb.length>=3){
@@ -5514,7 +5523,7 @@ apply(compute());
 if(mq&&mq.addEventListener){mq.addEventListener('change',function(){apply(compute());});}
 try{
 	var obs=new MutationObserver(function(){apply(compute());});
-	obs.observe(d,{attributes:true,attributeFilter:['data-theme-mode','data-darkmode','data-liquid-mode','class']});
+	obs.observe(d,{attributes:true,attributeFilter:['data-theme-mode','data-darkmode','data-liquid-mode','data-argon-mode','class']});
 	if(b){obs.observe(b,{attributes:true});}
 }catch(e){}
 window.addEventListener('load',function(){apply(compute());});
