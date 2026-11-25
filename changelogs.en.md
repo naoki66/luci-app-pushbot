@@ -1,5 +1,12 @@
 # Changelog
 
+- **2026-11-25** (v6.01-r18, upstream r14–r17 merged): absorb updates from zzsj0928
+  - Merge: upstream `master` `3591659`, covering r14–r17 and the `.deploy-tmp/` ignore rule; all 6 original commits and published tags of this fork are preserved
+  - Fixed (upstream r14): Web login notifications now include "Login method: Web login" in the plain-text body; the table no longer reads a non-existent auth method from the log
+  - Fixed (upstream r15–r17): duplicate detection for batch device aliases, with MAC as the dedup key instead of the whole entry; also fixes a crash where the duplicate hint was inserted before its parent was attached
+  - Translations: added the Chinese entry for `Duplicate entries were ignored` and synced `.po` / `.pot`; `PKG_RELEASE` 15 → 18 to avoid colliding with upstream r17
+  - Preserved: the WeCom app three message types, repository reference migration, localised README assets and the Argon v3 dark-mode fix are all intact
+
 - **2026-10-13** (v6.01-r15, original modification by naoki66): WeCom app now supports three message types
   - Added: **Message Type** — a dropdown inside the "WeCom app" channel to switch between **markdown / text / mpnews**; the four WeCom credentials are shared, no need to fill them twice
   - Added: **mpnews (graphic message)** — pushes an article card (title + body + thumbnail, tap the title to expand), body rendered as HTML; the thumbnail is uploaded before each send to obtain `thumb_media_id`, and a default image ships at `/usr/bin/pushbot/api/logo.png` (a custom path is also supported: JPG/PNG within 2MB, best at 900x383)

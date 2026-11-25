@@ -1259,3 +1259,6 @@ msgstr ""
 msgid "Only used by mpnews, uploaded before each send<br>JPG or PNG within 2MB, best at 900x383 (2.35:1)<br>Default: /usr/bin/pushbot/api/logo.png<br><br>"
 msgstr ""
 
+msgid "Duplicate entries were ignored"
+msgstr ""
+

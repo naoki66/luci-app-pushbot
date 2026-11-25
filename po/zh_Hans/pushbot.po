@@ -1505,3 +1505,6 @@ msgstr "缩略图路径"
 
 msgid "Only used by mpnews, uploaded before each send<br>JPG or PNG within 2MB, best at 900x383 (2.35:1)<br>Default: /usr/bin/pushbot/api/logo.png<br><br>"
 msgstr "仅图文消息使用，每次发送前会重新上传<br>支持 2MB 以内的 JPG/PNG，最佳 900x383（2.35:1）<br>默认：/usr/bin/pushbot/api/logo.png<br><br>"
+
+msgid "Duplicate entries were ignored"
+msgstr "存在重复，已忽略重复的条目"
